@@ -30,6 +30,13 @@ class AssignmentController(
         return repo.save(Assignment(title = req.title, description = req.description, dueDate = req.dueDate, course = course)).toDto()
     }
 
+    @PutMapping("/{id}")
+    fun update(@PathVariable id: Long, @RequestBody req: CreateAssignmentRequest): AssignmentDto {
+        val existing = findOrThrow(id)
+        val course = courseRepo.findById(req.courseId).orElseThrow { ResponseStatusException(HttpStatus.BAD_REQUEST, "Course not found") }
+        return repo.save(existing.copy(title = req.title, description = req.description, dueDate = req.dueDate, course = course)).toDto()
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Long) = repo.deleteById(id)

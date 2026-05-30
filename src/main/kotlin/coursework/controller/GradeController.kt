@@ -36,6 +36,14 @@ class GradeController(
         return repo.save(Grade(value = req.value, student = student, course = course)).toDto()
     }
 
+    @PutMapping("/{id}")
+    fun update(@PathVariable id: Long, @RequestBody req: CreateGradeRequest): GradeDto {
+        val existing = repo.findById(id).orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND) }
+        val student = studentRepo.findById(req.studentId).orElseThrow { ResponseStatusException(HttpStatus.BAD_REQUEST, "Student not found") }
+        val course = courseRepo.findById(req.courseId).orElseThrow { ResponseStatusException(HttpStatus.BAD_REQUEST, "Course not found") }
+        return repo.save(existing.copy(value = req.value, student = student, course = course)).toDto()
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(@PathVariable id: Long) = repo.deleteById(id)
