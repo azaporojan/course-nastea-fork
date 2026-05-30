@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Assignment, Course } from "../types";
 import * as api from "../api";
 import { ApiError } from "../api";
-import { Badge, Btn, Empty, ErrorBar, Field, Input, Modal, PageHeader, SearchBar, Select, Spinner, Table, Td, Th, Tr, Textarea } from "./ui";
+import { Badge, Btn, Empty, ErrorBar, Field, Input, Modal, PageHeader, SearchBar, Select, Spinner, Table, Td, Th, Tr, Textarea, useConfirm } from "./ui";
 
 type Form = { title: string; description: string; dueDate: string; courseId: string };
 type FE = Partial<Record<keyof Form, string>>;
@@ -33,6 +33,7 @@ export default function Assignments() {
   const [fe, setFe]                   = useState<FE>({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading]         = useState(true);
+  const { confirm, dialog }           = useConfirm();
 
   const load = () => {
     setLoading(true);
@@ -73,20 +74,27 @@ export default function Assignments() {
     }
   };
 
-  const remove = async (id: number) => {
-    if (!confirm("Delete this assignment?")) return;
-    try { await api.deleteAssignment(id); load(); }
-    catch (e) { alert(e instanceof ApiError ? e.message : "Delete failed."); }
+  const remove = async (a: Assignment) => {
+    const ok = await confirm(
+      "Delete assignment",
+      `Are you sure you want to delete "${a.title}"?`,
+      "Delete",
+      "danger"
+    );
+    if (!ok) return;
+    try { await api.deleteAssignment(a.id); load(); }
+    catch (e) { setServerError(e instanceof ApiError ? e.message : "Delete failed."); }
   };
 
   return (
     <div>
+      {dialog}
       <PageHeader title="Assignments" count={filtered.length} action={<Btn onClick={openAdd}>+ Add assignment</Btn>} />
       <SearchBar value={search} onChange={setSearch} placeholder="Search assignments…" />
 
       {loading ? <Spinner /> : (
         <Table>
-          <thead><tr><Th>Title</Th><Th>Course</Th><Th>Due date</Th><Th>Status</Th><Th children={undefined} /></tr></thead>
+          <thead><tr><Th>Title</Th><Th>Course</Th><Th>Due date</Th><Th>Status</Th><Th /></tr></thead>
           <tbody>
             {filtered.length === 0
               ? <tr><td colSpan={5}><Empty label="No assignments yet." /></td></tr>
@@ -104,7 +112,7 @@ export default function Assignments() {
                       <Td className="text-right">
                         <div className="flex gap-2 justify-end">
                           <Btn variant="ghost" size="sm" onClick={() => openEdit(a)}>Edit</Btn>
-                          <Btn variant="danger" size="sm" onClick={() => remove(a.id)}>Delete</Btn>
+                          <Btn variant="danger" size="sm" onClick={() => remove(a)}>Delete</Btn>
                         </div>
                       </Td>
                     </Tr>

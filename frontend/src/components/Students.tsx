@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Student } from "../types";
 import * as api from "../api";
 import { ApiError } from "../api";
-import { Btn, Badge, Empty, ErrorBar, Field, Input, Modal, PageHeader, SearchBar, Spinner, Table, Td, Th, Tr } from "./ui";
+import { Btn, Badge, Empty, ErrorBar, Field, Input, Modal, PageHeader, SearchBar, Spinner, Table, Td, Th, Tr, useConfirm } from "./ui";
 
 type Form = { firstName: string; lastName: string; email: string; groupName: string };
 type FE = Partial<Record<keyof Form, string>>;
@@ -11,12 +11,12 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function validate(f: Form): FE {
   const e: FE = {};
-  if (!f.firstName.trim())            e.firstName = "Required.";
+  if (!f.firstName.trim())                e.firstName = "Required.";
   else if (f.firstName.trim().length < 2) e.firstName = "At least 2 characters.";
-  if (!f.lastName.trim())             e.lastName = "Required.";
-  else if (f.lastName.trim().length < 2)  e.lastName = "At least 2 characters.";
-  if (!f.email.trim())                e.email = "Required.";
-  else if (!EMAIL_RE.test(f.email))   e.email = "Enter a valid email (e.g. name@domain.com).";
+  if (!f.lastName.trim())                 e.lastName  = "Required.";
+  else if (f.lastName.trim().length < 2)  e.lastName  = "At least 2 characters.";
+  if (!f.email.trim())                    e.email = "Required.";
+  else if (!EMAIL_RE.test(f.email))       e.email = "Enter a valid email (e.g. name@domain.com).";
   return e;
 }
 
@@ -28,6 +28,7 @@ export default function Students() {
   const [fe, setFe]             = useState<FE>({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading]   = useState(true);
+  const { confirm, dialog }     = useConfirm();
 
   const load = () => {
     setLoading(true);
@@ -68,14 +69,23 @@ export default function Students() {
     }
   };
 
-  const remove = async (id: number) => {
-    if (!confirm("Delete this student? This cannot be undone.")) return;
-    try { await api.deleteStudent(id); load(); }
-    catch (e) { alert(e instanceof ApiError ? e.message : "Delete failed."); }
+  const remove = async (s: Student) => {
+    const ok = await confirm(
+      "Delete student",
+      `Are you sure you want to delete ${s.firstName} ${s.lastName}? All their grades will also be removed.`,
+      "Delete",
+      "danger"
+    );
+    if (!ok) return;
+    try { await api.deleteStudent(s.id); load(); }
+    catch (e) {
+      setServerError(e instanceof ApiError ? e.message : "Delete failed.");
+    }
   };
 
   return (
     <div>
+      {dialog}
       <PageHeader title="Students" count={filtered.length} action={<Btn onClick={openAdd}>+ Add student</Btn>} />
       <SearchBar value={search} onChange={setSearch} placeholder="Search by name, email or group…" />
 
@@ -93,7 +103,7 @@ export default function Students() {
                   <Td className="text-right">
                     <div className="flex gap-2 justify-end">
                       <Btn variant="ghost" size="sm" onClick={() => openEdit(s)}>Edit</Btn>
-                      <Btn variant="danger" size="sm" onClick={() => remove(s.id)}>Delete</Btn>
+                      <Btn variant="danger" size="sm" onClick={() => remove(s)}>Delete</Btn>
                     </div>
                   </Td>
                 </Tr>

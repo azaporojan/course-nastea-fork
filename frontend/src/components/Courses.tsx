@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Course } from "../types";
 import * as api from "../api";
 import { ApiError } from "../api";
-import { Btn, Empty, ErrorBar, Field, Input, Modal, PageHeader, SearchBar, Spinner, Table, Td, Th, Tr, Textarea } from "./ui";
+import { Btn, Empty, ErrorBar, Field, Input, Modal, PageHeader, SearchBar, Spinner, Table, Td, Th, Tr, Textarea, useConfirm } from "./ui";
 
 type Form = { name: string; description: string; teacher: string };
 type FE = Partial<Record<keyof Form, string>>;
@@ -23,6 +23,7 @@ export default function Courses() {
   const [fe, setFe]             = useState<FE>({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading]   = useState(true);
+  const { confirm, dialog }     = useConfirm();
 
   const load = () => {
     setLoading(true);
@@ -58,20 +59,27 @@ export default function Courses() {
     }
   };
 
-  const remove = async (id: number) => {
-    if (!confirm("Delete this course? All assignments and grades will also be removed.")) return;
-    try { await api.deleteCourse(id); load(); }
-    catch (e) { alert(e instanceof ApiError ? e.message : "Delete failed."); }
+  const remove = async (c: Course) => {
+    const ok = await confirm(
+      "Delete course",
+      `Are you sure you want to delete "${c.name}"? All related assignments and grades will also be removed.`,
+      "Delete",
+      "danger"
+    );
+    if (!ok) return;
+    try { await api.deleteCourse(c.id); load(); }
+    catch (e) { setServerError(e instanceof ApiError ? e.message : "Delete failed."); }
   };
 
   return (
     <div>
+      {dialog}
       <PageHeader title="Courses" count={filtered.length} action={<Btn onClick={openAdd}>+ Add course</Btn>} />
       <SearchBar value={search} onChange={setSearch} placeholder="Search by name or teacher…" />
 
       {loading ? <Spinner /> : (
         <Table>
-          <thead><tr><Th>Course name</Th><Th>Teacher</Th><Th>Description</Th><Th children={undefined} /></tr></thead>
+          <thead><tr><Th>Course name</Th><Th>Teacher</Th><Th>Description</Th><Th /></tr></thead>
           <tbody>
             {filtered.length === 0
               ? <tr><td colSpan={4}><Empty label="No courses yet." /></td></tr>
@@ -83,7 +91,7 @@ export default function Courses() {
                   <Td className="text-right">
                     <div className="flex gap-2 justify-end">
                       <Btn variant="ghost" size="sm" onClick={() => openEdit(c)}>Edit</Btn>
-                      <Btn variant="danger" size="sm" onClick={() => remove(c.id)}>Delete</Btn>
+                      <Btn variant="danger" size="sm" onClick={() => remove(c)}>Delete</Btn>
                     </div>
                   </Td>
                 </Tr>

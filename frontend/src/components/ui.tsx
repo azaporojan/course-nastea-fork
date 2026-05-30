@@ -75,6 +75,73 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
   );
 }
 
+// ─── Confirm dialog ───────────────────────────────────────────────────────────
+interface ConfirmProps {
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  variant?: "danger" | "primary";
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+export function ConfirmDialog({ title, message, confirmLabel = "Confirm", variant = "danger", onConfirm, onCancel }: ConfirmProps) {
+  const confirmClass = variant === "danger"
+    ? "bg-red-600 hover:bg-red-700 text-white"
+    : "bg-zinc-900 hover:bg-zinc-700 text-white";
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onCancel}>
+      <div className="bg-white rounded-xl shadow-xl w-[380px] max-w-[92vw] p-6" onClick={e => e.stopPropagation()}>
+        <div className="mb-4">
+          <p className="text-base font-semibold text-zinc-900 mb-1">{title}</p>
+          <p className="text-sm text-zinc-500 leading-relaxed">{message}</p>
+        </div>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-3.5 py-2 text-sm font-medium rounded-md border border-zinc-200 text-zinc-600 bg-white hover:bg-zinc-50 cursor-pointer transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className={`px-3.5 py-2 text-sm font-medium rounded-md cursor-pointer transition-colors border-none ${confirmClass}`}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── useConfirm hook ──────────────────────────────────────────────────────────
+export function useConfirm() {
+  const [state, setState] = useState<{
+    title: string;
+    message: string;
+    confirmLabel: string;
+    variant: "danger" | "primary";
+    resolve: (v: boolean) => void;
+  } | null>(null);
+
+  const confirm = (title: string, message: string, confirmLabel = "Delete", variant: "danger" | "primary" = "danger") =>
+    new Promise<boolean>(resolve => setState({ title, message, confirmLabel, variant, resolve }));
+
+  const dialog = state ? (
+    <ConfirmDialog
+      title={state.title}
+      message={state.message}
+      confirmLabel={state.confirmLabel}
+      variant={state.variant}
+      onConfirm={() => { state.resolve(true);  setState(null); }}
+      onCancel= {() => { state.resolve(false); setState(null); }}
+    />
+  ) : null;
+
+  return { confirm, dialog };
+}
+
 // ─── Table primitives ─────────────────────────────────────────────────────────
 export function Table({ children }: { children: ReactNode }) {
   return (

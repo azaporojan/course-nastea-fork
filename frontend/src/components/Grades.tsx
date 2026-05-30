@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Grade, Student, Course } from "../types";
 import * as api from "../api";
 import { ApiError } from "../api";
-import { Badge, Btn, Empty, ErrorBar, Field, Input, Modal, PageHeader, SearchBar, Select, Spinner, Table, Td, Th, Tr } from "./ui";
+import { Badge, Btn, Empty, ErrorBar, Field, Input, Modal, SearchBar, Select, Spinner, Table, Td, Th, Tr, useConfirm } from "./ui";
 
 type Form = { value: string; studentId: string; courseId: string; date: string };
 type FE = Partial<Record<keyof Form, string>>;
@@ -18,7 +18,7 @@ function validate(f: Form): FE {
     e.value = "Required.";
   } else {
     const v = Number(f.value);
-    if (!Number.isInteger(v)) e.value = "Must be a whole number.";
+    if (!Number.isInteger(v))  e.value = "Must be a whole number.";
     else if (v < 1 || v > 10) e.value = "Must be between 1 and 10.";
   }
   return e;
@@ -36,6 +36,7 @@ export default function Grades() {
   const [fe, setFe]             = useState<FE>({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading]   = useState(true);
+  const { confirm, dialog }     = useConfirm();
 
   const load = () => {
     setLoading(true);
@@ -78,14 +79,21 @@ export default function Grades() {
     }
   };
 
-  const remove = async (id: number) => {
-    if (!confirm("Delete this grade?")) return;
-    try { await api.deleteGrade(id); load(); }
-    catch (e) { alert(e instanceof ApiError ? e.message : "Delete failed."); }
+  const remove = async (g: Grade) => {
+    const ok = await confirm(
+      "Delete grade",
+      `Delete grade ${g.value}/10 for ${sName(g.studentId)} in ${cName(g.courseId)}?`,
+      "Delete",
+      "danger"
+    );
+    if (!ok) return;
+    try { await api.deleteGrade(g.id); load(); }
+    catch (e) { setServerError(e instanceof ApiError ? e.message : "Delete failed."); }
   };
 
   return (
     <div>
+      {dialog}
       <div className="flex items-baseline justify-between mb-6">
         <div className="flex items-baseline gap-3">
           <h1 className="text-xl font-semibold text-zinc-900">Grades</h1>
@@ -112,7 +120,7 @@ export default function Grades() {
                   <Td className="text-right">
                     <div className="flex gap-2 justify-end">
                       <Btn variant="ghost" size="sm" onClick={() => openEdit(g)}>Edit</Btn>
-                      <Btn variant="danger" size="sm" onClick={() => remove(g.id)}>Delete</Btn>
+                      <Btn variant="danger" size="sm" onClick={() => remove(g)}>Delete</Btn>
                     </div>
                   </Td>
                 </Tr>
