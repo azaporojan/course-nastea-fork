@@ -1,0 +1,17 @@
+# Local development DB only (previous root docker-compose.yml).
+# Run: docker compose -f docker-compose.dev.yml up -d
+services:
+  postgres:
+    image: postgres:16
+    container_name: coursedb
+    environment:
+      POSTGRES_DB: coursedb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

@@ -1,6 +1,7 @@
 package coursework.config
 
 import coursework.security.JwtAuthFilter
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
@@ -17,7 +18,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig(private val jwtAuthFilter: JwtAuthFilter) {
+class SecurityConfig(
+    private val jwtAuthFilter: JwtAuthFilter,
+    @Value("\${app.cors.allowed-origins}") private val allowedOriginsProp: String
+) {
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
@@ -26,7 +30,7 @@ class SecurityConfig(private val jwtAuthFilter: JwtAuthFilter) {
             .cors { it.configurationSource(corsSource()) }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
-                // public
+                // public API
                 auth.requestMatchers("/api/auth/**").permitAll()
                 auth.requestMatchers(
                     "/swagger-ui.html", "/swagger-ui/**",
@@ -38,7 +42,8 @@ class SecurityConfig(private val jwtAuthFilter: JwtAuthFilter) {
                 auth.requestMatchers(HttpMethod.POST,   "/api/**").hasRole("TEACHER")
                 auth.requestMatchers(HttpMethod.PUT,    "/api/**").hasRole("TEACHER")
                 auth.requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("TEACHER")
-                auth.anyRequest().authenticated()
+                // everything else: static frontend (index.html, /assets/**) + SPA forwards
+                auth.anyRequest().permitAll()
             }
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
 
@@ -51,7 +56,7 @@ class SecurityConfig(private val jwtAuthFilter: JwtAuthFilter) {
     @Bean
     fun corsSource(): CorsConfigurationSource {
         val config = CorsConfiguration().apply {
-            allowedOrigins = listOf("http://localhost:5174")
+            allowedOrigins = allowedOriginsProp.split(",").map { it.trim() }.filter { it.isNotEmpty() }
             allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
             allowedHeaders = listOf("*")
             allowCredentials = true

@@ -151,7 +151,7 @@ export function Table({ children }: { children: ReactNode }) {
   );
 }
 
-export function Th({ children }: { children: ReactNode }) {
+export function Th({ children }: { children?: ReactNode }) {
   return (
     <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider border-b border-zinc-100 bg-zinc-50">
       {children}
@@ -167,11 +167,12 @@ export function Td({ children, className = "" }: { children: ReactNode; classNam
   );
 }
 
-export function Tr({ children }: { children: ReactNode }) {
+export function Tr({ children, className = "", onClick }: { children: ReactNode; className?: string; onClick?: () => void }) {
   const [hover, setHover] = useState(false);
   return (
     <tr
-      className={`transition-colors ${hover ? "bg-zinc-50" : "bg-white"}`}
+      className={`transition-colors ${hover ? "bg-zinc-50" : "bg-white"} ${className}`}
+      onClick={onClick}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
