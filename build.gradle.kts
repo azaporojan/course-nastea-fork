@@ -15,6 +15,8 @@ java {
     }
 }
 
+extra["flyway.version"] = "11.20.3"
+
 repositories {
     mavenCentral()
 }
@@ -25,7 +27,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     runtimeOnly("org.postgresql:postgresql:42.7.3")
-    implementation("org.flywaydb:flyway-core")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
     runtimeOnly("org.flywaydb:flyway-database-postgresql")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.3")
     implementation("org.springframework.boot:spring-boot-starter-security")
